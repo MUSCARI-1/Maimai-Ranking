@@ -1,0 +1,126 @@
+/* static/style.css */
+body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
+h1 { color: #333; text-align: center; }
+.card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+
+th { background-color: #007bff; color: white; cursor: pointer; user-select: none; }
+th:hover { background-color: #0056b3; }
+.sort-icon { font-size: 12px; margin-left: 5px; color: #ffeb3b; }
+
+.filter-container { margin-bottom: 15px; padding: 10px; background-color: #e9ecef; border-radius: 5px; font-weight: bold; display: flex; align-items: center;}
+select { padding: 5px 10px; font-size: 16px; margin-left: 10px; border-radius: 4px; }
+
+#chartFilterStatus { margin-left: 15px; color: #d32f2f; font-weight: bold; cursor: pointer; display: none; padding: 5px 10px; border: 1px solid #d32f2f; border-radius: 4px; background-color: #ffebee; transition: 0.2s; }
+#chartFilterStatus:hover { background-color: #f44336; color: white; }
+
+.clickable-row { cursor: pointer; transition: background-color 0.2s; }
+.clickable-row:hover { background-color: #e3f2fd; }
+
+.modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-content {
+    background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+.modal-header h3 { margin: 0; color: #333; font-size: 1.2rem; }
+.modal-close { cursor: pointer; font-size: 24px; font-weight: bold; color: #aaa; border: none; background: none; }
+.modal-close:hover { color: #f44336; }
+.rank-1 { color: #d4af37; font-weight: bold; font-size: 1.1em; }
+
+.summary-container { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+.summary-text { flex: 1; min-width: 250px; }
+.summary-chart { flex: 1; min-width: 250px; max-width: 350px; margin: 0 auto; }
+#userSummaryList li { margin-bottom: 8px; font-size: 1.1em; }
+.clickable-text { cursor: pointer; color: #007bff; transition: color 0.2s; }
+.clickable-text:hover { color: #0056b3; text-decoration: underline; }
+
+/* 좁은 화면에서 표 글씨가 깨지지 않도록 보호하는 설정 */
+#scoreTable th:nth-child(2), #scoreTable td:nth-child(2), /* 2번째 칸: 레벨 */
+#scoreTable th:nth-child(3), #scoreTable td:nth-child(3), /* 3번째 칸: 1등 유저 */
+#scoreTable th:nth-child(4), #scoreTable td:nth-child(4)  /* 4번째 칸: 최고 점수 */
+{
+    white-space: nowrap; /* 글씨를 강제로 한 줄로 유지 (줄바꿈 금지) */
+}
+
+#scoreTable td:nth-child(1) {
+    word-break: break-all; /* 1번째 칸(곡 이름)은 공간이 부족하면 자연스럽게 줄바꿈 허용 */
+}
+
+/* =========================================
+   (Welcome) 전용 디자인
+========================================= */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }  
+}
+
+.welcome-body {
+    height: 100vh; 
+    margin: 0; 
+    padding: 0;
+    font-family: 'Jua', 'Malgun Gothic', sans-serif;
+    overflow: hidden;
+    background-color: black; 
+}
+
+.welcome-bg-image {
+    background-image: url('zunda.jpg'); 
+    height: 100%; 
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+
+    opacity: 0; 
+    animation: fadeIn 0.5s ease-in-out forwards; 
+}
+
+.welcome-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.welcome-content {
+    position: relative; top: 50%; transform: translateY(-50%);
+    text-align: center; color: white; z-index: 2;
+    padding: 20px;
+}
+
+.welcome-title {
+    font-size: 4rem; 
+    margin: 0 0 40px 0; 
+    color: white;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.7); 
+    word-break: keep-all; 
+}
+
+.welcome-btn {
+    display: inline-block;
+    background-color: #4CAF50; 
+    color: white;
+    text-decoration: none;
+    padding: 20px 50px;
+    font-size: 1.5rem;
+    border-radius: 50px; 
+    font-weight: bold;
+    transition: 0.3s;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border: 3px solid white; 
+}
+
+.welcome-btn:hover {
+    background-color: #45a049;
+    transform: scale(1.05); 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+/* 모바일 화면 대응 */
+@media (max-width: 768px) {
+    .welcome-title { font-size: 2.5rem; }
+    .welcome-btn { padding: 15px 30px; font-size: 1.2rem; }
+}

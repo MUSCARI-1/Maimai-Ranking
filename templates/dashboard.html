@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>마이마이 내수용 랭킹 보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>🏆 마이마이 1등 방어전 현황</h1>
+
+    <div class="card">
+        <div class="summary-container">
+            <div class="summary-text">
+                <h2>🔥 유저별 타이틀 획득 수</h2>
+                <ul id="userSummaryList"></ul>
+            </div>
+            <div class="summary-chart">
+                <p style="text-align:center; font-size:0.8em; color:#666; margin-bottom:0;">(조각을 클릭하면 해당 곡들만 모아볼 수 있습니다)</p>
+                <canvas id="rankingChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🎵 곡별 1등 랭킹 <span style="font-size: 0.6em; color:#666; font-weight:normal;">(표를 클릭하면 상세 순위를 볼 수 있습니다)</span></h2>
+        
+        <div class="filter-container">
+            <label for="levelFilter">보기 옵션: </label>
+            <select id="levelFilter" onchange="filterTable()">
+                <option value="all">전체 레벨 보기</option>
+            </select>
+            <span id="chartFilterStatus" onclick="clearChartFilter()">✖ 차트 필터 해제</span>
+        </div>
+
+        <table id="scoreTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('song', 0)">곡 이름 <span class="sort-icon" id="icon-0"></span></th>
+                    <th onclick="sortTable('level', 1)">레벨 <span class="sort-icon" id="icon-1"></span></th>
+                    <th onclick="sortTable('user', 2)">1등 유저 <span class="sort-icon" id="icon-2"></span></th>
+                    <th onclick="sortTable('score', 3)">최고 점수 <span class="sort-icon" id="icon-3"></span></th>
+                </tr>
+            </thead>
+            <tbody id="scoreTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="rankingModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitle">곡 이름 (Lv.?) 랭킹</h3>
+                <button class="modal-close" onclick="closeModal(event)">&times;</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">순위</th>
+                        <th style="width: 50%;">유저</th>
+                        <th style="width: 30%;">점수</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // JS 파일이 읽기 전에 파이썬 데이터를 전역 변수로 먼저 선언해줍니다.
+        const allScores = {{top_scores_json|safe}};
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

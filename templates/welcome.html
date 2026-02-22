@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>환영한다노다!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="welcome-body">
+    
+    <div class="welcome-bg-image">
+        <div class="welcome-overlay"></div>
+        
+        <div class="welcome-content">
+            <h1 class="welcome-title">아 쎄이! 환영한다노다</h1>
+            <a href="{{ url_for('show_dashboard') }}" class="welcome-btn">입장</a>
+        </div>
+    </div>
+
+</body>
+</html>
