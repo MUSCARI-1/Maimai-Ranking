@@ -3,12 +3,18 @@ import json
 import os
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(BASE_DIR, '.env')
+
+load_dotenv(env_path)
 
 app = Flask(__name__)
 CORS(app)
 
-app.secret_key = 'super_secret_maimai_key_1234'
-SECRET_PASSWORD = 'beatpot'
+app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
+SECRET_PASSWORD = os.getenv('ADMIN_PASSWORD', 'ZUNDA')
 
 # 클라우드 서버용 절대 경로 설정 (이 서버가 위치한 곳의 maimai.db를 정확히 짚어줌)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
