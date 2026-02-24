@@ -35,10 +35,34 @@
         }
         /* Grid.js Customization */
         .gridjs-container { font-family: 'Pretendard', sans-serif; color: #334155; }
-        .gridjs-wrapper { border-radius: 0.75rem; border: none !important; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); }
+        .gridjs-wrapper { 
+            border-radius: 0.75rem; 
+            border: none !important; 
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); 
+            /* 가로 스크롤을 막고 자연스럽게 줄어들게 함 */
+            overflow-x: hidden !important; 
+        }
+        .gridjs-table {
+            width: 100% !important;
+            /* 기존의 min-width: 550px 방어막 삭제 */
+        }
         .gridjs-th { background-color: #f1f5f9 !important; font-weight: 600 !important; border-bottom: 2px solid #e2e8f0 !important; }
-        .gridjs-td { border: 1px solid #f1f5f9 !important; cursor: pointer; }
+        .gridjs-td { 
+            border: 1px solid #f1f5f9 !important; 
+            cursor: pointer; 
+            /* 좁은 화면에서 텍스트가 셀을 뚫고 나가지 않고 자연스럽게 줄바꿈 되도록 허용 */
+            white-space: normal !important; 
+            word-break: break-word !important; 
+        }
         .gridjs-tr:hover .gridjs-td { background-color: #f8fafc !important; }
+
+        /* 모바일 전용 여백/폰트 최적화 */
+        @media (max-width: 640px) {
+            .gridjs-th, .gridjs-td {
+                padding: 8px 6px !important; /* 좁은 화면에서 여백 대폭 축소 */
+                font-size: 0.75rem !important; /* 모바일에서 폰트 축소 */
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8">
@@ -237,10 +261,14 @@
                 if (!gridInstance) {
                     gridInstance = new gridjs.Grid({
                         columns: [
-                            { name: "곡 이름", width: '45%' },
+                            { 
+                                name: "곡 이름", 
+                                /* 너비 비율을 다시 주고 줄바꿈 방지 클래스를 제거 */
+                                width: '45%' 
+                            },
                             { 
                                 name: "레벨", 
-                                width: '15%', 
+                                width: '10%',
                                 sort: {
                                     compare: (a, b) => {
                                         // 인간의 도메인 지식(+, - 티어)을 컴퓨터의 정량적 수치(.5)로 매핑하는 커스텀 로직
@@ -261,19 +289,19 @@
                                     }
                                 },
                                 attributes: (cell) => { 
-                                    // cell이 숫자면 includes에서 터짐 -> 명시적으로 String 변환 후 검사
-                                    if(cell && String(cell).includes('+')) return { 'class': 'text-red-500 font-bold' };
-                                    return { 'class': 'font-medium' }; 
+                                    let baseClass = '';
+                                    // if(cell && String(cell).includes('+')) return { 'class': baseClass + 'text-red-500 font-bold' };
+                                    return { 'class': baseClass + 'font-medium' }; 
                                 }
                             },
                             { 
                                 name: "1등 유저", 
-                                width: '25%', 
+                                width: '25%',
                                 formatter: (cell) => gridjs.html(`<span class="${cell === '없음' ? 'text-slate-400' : 'text-slate-800 font-semibold'}">${cell}</span>`) 
                             },
                             { 
                                 name: "최고 점수", 
-                                width: '15%', 
+                                width: '20%',
                                 formatter: (cell) => {
                                     // cell이 숫자가 아닐 경우의 포맷터 크래시 방지
                                     const numCell = Number(cell);
