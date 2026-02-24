@@ -2,74 +2,514 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>마이마이 내수용 랭킹 보드</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>maimai 내수용 랭킹 보드</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <h1>🏆 마이마이 1등 방어전 현황</h1>
+    <!-- Grid.js -->
+    <link href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
 
-    <div class="card">
-        <div class="summary-container">
-            <div class="summary-text">
-                <h2>🔥 유저별 타이틀 획득 수</h2>
-                <ul id="userSummaryList"></ul>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { 50: '#f0f9ff', 500: '#0ea5e9', 900: '#0c4a6e' } },
+                    fontFamily: { sans: ['Pretendard', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        /* Grid.js Customization */
+        .gridjs-container { font-family: 'Pretendard', sans-serif; color: #334155; }
+        .gridjs-wrapper { border-radius: 0.75rem; border: none !important; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); }
+        .gridjs-th { background-color: #f1f5f9 !important; font-weight: 600 !important; border-bottom: 2px solid #e2e8f0 !important; }
+        .gridjs-td { border: 1px solid #f1f5f9 !important; cursor: pointer; }
+        .gridjs-tr:hover .gridjs-td { background-color: #f8fafc !important; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="w-full max-w-7xl mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                <span class="text-4xl">👑</span> maimai DX 방어전 현황
+            </h1>
+            <p class="text-slate-500 mt-2 text-sm">내수용 프라이빗 랭킹 및 점유율 분석</p>
+        </div>
+        <div class="flex gap-2">
+            <button class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">내 기록 갱신</button>
+        </div>
+    </div>
+
+    <!-- Top Widgets -->
+    <div class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- User Summary List -->
+        <div class="glass-card rounded-2xl p-6 lg:col-span-1 flex flex-col max-h-[400px]">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <span class="text-xl">🔥</span> 타이틀 점유율
+                </h2>
             </div>
-            <div class="summary-chart">
-                <p style="text-align:center; font-size:0.8em; color:#666; margin-bottom:0;">(조각을 클릭하면 해당 곡들만 모아볼 수 있습니다)</p>
+            <ul class="space-y-3 overflow-y-auto pr-2" id="userSummaryList">
+                <!-- Dynamically rendered by JS -->
+            </ul>
+        </div>
+
+        <!-- Chart Area -->
+        <div class="glass-card rounded-2xl p-6 lg:col-span-2 flex flex-col items-center justify-center relative min-h-[400px]">
+            <h2 class="absolute top-6 left-6 text-lg font-semibold text-slate-800">점유율 현황</h2>
+            <p class="absolute top-7 right-6 text-xs text-slate-400 hidden sm:block">조각을 클릭하면 해당 곡 필터링</p>
+            <div class="w-full h-72 flex justify-center">
                 <canvas id="rankingChart"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <h2>🎵 곡별 1등 랭킹 <span style="font-size: 0.6em; color:#666; font-weight:normal;">(표를 클릭하면 상세 순위를 볼 수 있습니다)</span></h2>
-        
-        <div class="filter-container">
-            <label for="levelFilter">보기 옵션: </label>
-            <select id="levelFilter" onchange="filterTable()">
-                <option value="all">전체 레벨 보기</option>
-            </select>
-            <span id="chartFilterStatus" onclick="clearChartFilter()">✖ 차트 필터 해제</span>
+    <!-- Data Grid -->
+    <div class="w-full max-w-7xl glass-card rounded-2xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <span class="text-xl">🎵</span> 전체 곡 랭킹 보드
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">행을 클릭하면 상세 기록을 볼 수 있습니다.</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span id="chartFilterStatus" class="hidden text-sm font-bold text-red-500 cursor-pointer hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-lg transition" onclick="clearChartFilter()">
+                    ✖ 필터 해제
+                </span>
+                <label for="levelFilter" class="text-sm font-medium text-slate-600 hidden sm:block">레벨 필터:</label>
+                <select id="levelFilter" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none shadow-sm transition">
+                    <option value="all">전체 레벨 보기</option>
+                    <!-- Dynamically populated -->
+                </select>
+            </div>
         </div>
-
-        <table id="scoreTable">
-            <thead>
-                <tr>
-                    <th onclick="sortTable('song', 0)">곡 이름 <span class="sort-icon" id="icon-0"></span></th>
-                    <th onclick="sortTable('level', 1)">레벨 <span class="sort-icon" id="icon-1"></span></th>
-                    <th onclick="sortTable('user', 2)">1등 유저 <span class="sort-icon" id="icon-2"></span></th>
-                    <th onclick="sortTable('score', 3)">최고 점수 <span class="sort-icon" id="icon-3"></span></th>
-                </tr>
-            </thead>
-            <tbody id="scoreTableBody"></tbody>
-        </table>
+        <div id="gridjs-table-wrapper"></div>
     </div>
 
-    <div id="rankingModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 id="modalTitle">곡 이름 (Lv.?) 랭킹</h3>
-                <button class="modal-close" onclick="closeModal(event)">&times;</button>
+    <!-- Modal Area (Tailwind Styled) -->
+    <div id="rankingModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 items-center justify-center p-4 transition-opacity" onclick="closeModal(event)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 id="modalTitle" class="font-bold text-xl text-slate-800">곡 이름 (Lv.?) 랭킹</h3>
+                <button class="text-slate-400 hover:text-red-500 text-3xl font-light leading-none transition" onclick="closeModal(event)">&times;</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">순위</th>
-                        <th style="width: 50%;">유저</th>
-                        <th style="width: 30%;">점수</th>
-                    </tr>
-                </thead>
-                <tbody id="modalTableBody"></tbody>
-            </table>
+            <!-- Modal Body -->
+            <div class="p-0 overflow-y-auto max-h-[60vh]">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 shadow-sm">
+                        <tr>
+                            <th class="px-6 py-4 w-1/4">순위</th>
+                            <th class="px-6 py-4 w-1/2">유저</th>
+                            <th class="px-6 py-4 w-1/4 text-right">점수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody" class="divide-y divide-slate-100">
+                        <!-- Data fetched via API -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        // JS 파일이 읽기 전에 파이썬 데이터를 전역 변수로 먼저 선언해줍니다.
-        const allScores = {{top_scores_json|safe}};
+        // 1. Flask에서 주입되는 데이터
+        const allScores = {{ top_scores_json|safe }};
+        
+        // --- 상태 변수 ---
+        let currentLevelFilter = "all";
+        let currentChartFilter = "all";
+        let myChart = null;
+        let gridInstance = null;
+
+        // --- 초기화 로직 ---
+        window.onload = function() {
+            // 방어적 코드: allScores가 존재할 때만 레벨 필터 생성
+            if (allScores && Array.isArray(allScores) && allScores.length > 0) {
+                const levels = new Set(allScores.map(item => String(item.level || ""))); // 명시적 String 캐스팅
+                const select = document.getElementById("levelFilter");
+                
+                const sortedLevels = Array.from(levels).sort((a, b) => {
+                    const getLevelValue = (lvl) => { let val = parseFloat(lvl); if (lvl.includes('+')) val += 0.5; return val; };
+                    return getLevelValue(b) - getLevelValue(a);
+                });
+
+                sortedLevels.forEach(lvl => {
+                    if(!lvl) return;
+                    const option = document.createElement("option");
+                    option.value = lvl;
+                    option.text = "Level " + lvl;
+                    select.appendChild(option);
+                });
+            }
+
+            // 이벤트 리스너 바인딩
+            document.getElementById("levelFilter").addEventListener("change", function(e) {
+                currentLevelFilter = e.target.value;
+                currentChartFilter = "all"; 
+                renderDashboard();
+            });
+
+            renderDashboard();
+        };
+
+        // --- 핵심 렌더링 함수 ---
+        function renderDashboard() {
+            // 방어적 코드: 데이터가 아예 없더라도 빈 배열로 치환하여 Grid.js가 '데이터 없음' UI를 그리도록 유도
+            const safeScores = (allScores && Array.isArray(allScores)) ? allScores : [];
+
+            // 1차 필터: 레벨
+            let levelFilteredScores = safeScores;
+            if (currentLevelFilter !== "all") {
+                levelFilteredScores = safeScores.filter(item => String(item.level) === String(currentLevelFilter));
+            }
+
+            updateSummaryAndChart(levelFilteredScores);
+
+            // 2차 필터: 차트/유저 상호작용
+            let tableScores = levelFilteredScores;
+            if (currentChartFilter !== "all") {
+                if (currentChartFilter === 'null') {
+                    tableScores = tableScores.filter(item => item.user === '없음');
+                } else if (currentChartFilter === 'tie') {
+                    tableScores = tableScores.filter(item => (item.user || "").includes(', '));
+                } else if (currentChartFilter.startsWith('user:')) {
+                    const u = currentChartFilter.split(':')[1];
+                    tableScores = tableScores.filter(item => (item.user || "").split(', ').includes(u));
+                } else if (currentChartFilter.startsWith('single:')) {
+                    const u = currentChartFilter.split(':')[1];
+                    tableScores = tableScores.filter(item => item.user === u);
+                } else if (currentChartFilter.startsWith('tie:')) {
+                    const u = currentChartFilter.split(':')[1];
+                    tableScores = tableScores.filter(item => (item.user || "").includes(', ') && (item.user || "").split(', ').includes(u));
+                }
+            }
+
+            const filterStatus = document.getElementById("chartFilterStatus");
+            if (currentChartFilter === "all") {
+                filterStatus.classList.add("hidden");
+                filterStatus.classList.remove("inline-block");
+            } else {
+                filterStatus.classList.remove("hidden");
+                filterStatus.classList.add("inline-block");
+                let text = "";
+                if (currentChartFilter === 'null') text = '미플레이 곡';
+                else if (currentChartFilter === 'tie') text = '전체 공동 1등 곡';
+                else if (currentChartFilter.startsWith('user:')) text = currentChartFilter.split(':')[1] + ' 전체 1등 곡';
+                else if (currentChartFilter.startsWith('single:')) text = currentChartFilter.split(':')[1] + ' 단독 1등 곡';
+                else if (currentChartFilter.startsWith('tie:')) text = currentChartFilter.split(':')[1] + ' 공동 1등 곡';
+                filterStatus.innerHTML = `✖ [${text}] 필터 해제`;
+            }
+
+            // [에러 방지 핵심 구간] Grid.js 형식에 맞게 데이터 변환 시 엄격한 타입 교정
+            const gridData = tableScores.map(row => {
+                let parsedScore = parseFloat(row.score);
+                if (isNaN(parsedScore)) parsedScore = 0; // NaN이 Grid.js 정렬을 붕괴시키는 것 방지
+
+                return [
+                    row.song || "Unknown Song", 
+                    String(row.level || ""), // 숫자 14가 들어와도 무조건 문자열 "14"로 캐스팅
+                    row.user || "없음", 
+                    parsedScore 
+                ];
+            });
+
+            // Grid.js 렌더링 에러 바운더리
+            try {
+                if (!gridInstance) {
+                    gridInstance = new gridjs.Grid({
+                        columns: [
+                            { name: "곡 이름", width: '45%' },
+                            { 
+                                name: "레벨", 
+                                width: '15%', 
+                                sort: {
+                                    compare: (a, b) => {
+                                        // 인간의 도메인 지식(+, - 티어)을 컴퓨터의 정량적 수치(.5)로 매핑하는 커스텀 로직
+                                        const getLevelValue = (lvl) => {
+                                            if (!lvl) return 0;
+                                            let val = parseFloat(lvl);
+                                            if (isNaN(val)) return 0; // "9", "10" 문자열 꼬임 방지
+                                            if (String(lvl).includes('+')) val += 0.5; // +는 0.5 가중치 부여
+                                            return val;
+                                        };
+                                        const valA = getLevelValue(a);
+                                        const valB = getLevelValue(b);
+                                        
+                                        // Grid.js 정렬 엔진에 결과값 반환
+                                        if (valA > valB) return 1;
+                                        if (valA < valB) return -1;
+                                        return 0;
+                                    }
+                                },
+                                attributes: (cell) => { 
+                                    // cell이 숫자면 includes에서 터짐 -> 명시적으로 String 변환 후 검사
+                                    if(cell && String(cell).includes('+')) return { 'class': 'text-red-500 font-bold' };
+                                    return { 'class': 'font-medium' }; 
+                                }
+                            },
+                            { 
+                                name: "1등 유저", 
+                                width: '25%', 
+                                formatter: (cell) => gridjs.html(`<span class="${cell === '없음' ? 'text-slate-400' : 'text-slate-800 font-semibold'}">${cell}</span>`) 
+                            },
+                            { 
+                                name: "최고 점수", 
+                                width: '15%', 
+                                formatter: (cell) => {
+                                    // cell이 숫자가 아닐 경우의 포맷터 크래시 방지
+                                    const numCell = Number(cell);
+                                    return (isNaN(numCell) || numCell === 0) ? '-' : `${numCell.toFixed(4)}%`;
+                                }
+                            }
+                        ],
+                        data: gridData,
+                        search: { enabled: true, placeholder: "곡명 또는 유저 검색..." },
+                        sort: true,
+                        pagination: { enabled: true, limit: 10, summary: true },
+                        language: {
+                            search: { placeholder: '🔍 검색...' },
+                            pagination: { previous: '이전', next: '다음', showing: '표시중', results: () => '결과' },
+                            noRecordsFound: '해당하는 곡이 없습니다.'
+                        },
+                        className: {
+                            table: 'w-full text-sm text-left text-slate-500',
+                            thead: 'text-xs text-slate-700 uppercase bg-slate-50',
+                            search: 'mb-4 float-left', 
+                        }
+                    }).render(document.getElementById("gridjs-table-wrapper"));
+
+                    gridInstance.on('rowClick', (...args) => {
+                        const row = args[1]; 
+                        if(row && row.cells) {
+                            openModal(row.cells[0].data, row.cells[1].data);
+                        }
+                    });
+                } else {
+                    gridInstance.updateConfig({ data: gridData }).forceRender();
+                }
+            } catch (error) {
+                console.error("Grid.js 렌더링 치명적 오류:", error);
+                document.getElementById("gridjs-table-wrapper").innerHTML = `
+                    <div class="p-6 text-center bg-red-50 rounded-lg border border-red-200">
+                        <p class="text-red-600 font-bold">테이블을 그리는 중 오류가 발생했습니다.</p>
+                        <p class="text-red-400 text-sm mt-1">데이터 타입 불일치일 수 있습니다. (F12 콘솔 확인 필요)</p>
+                    </div>`;
+            }
+        }
+
+        // --- 리스트 필터링 연동 ---
+        function setListFilter(filterType) {
+            if (currentChartFilter === filterType) currentChartFilter = 'all';
+            else currentChartFilter = filterType;
+            renderDashboard();
+        }
+
+        function clearChartFilter() {
+            currentChartFilter = "all";
+            renderDashboard();
+        }
+
+        // --- 요약 및 차트 렌더링 ---
+        function updateSummaryAndChart(filteredScores) {
+            const userStats = {};
+            const chartData = { 'null': 0, 'tie': 0 };
+
+            filteredScores.forEach(row => {
+                if (row.user === '없음') {
+                    chartData['null'] += 1;
+                } else if (row.user.includes(', ')) {
+                    chartData['tie'] += 1;
+                    const users = row.user.split(', ');
+                    users.forEach(u => {
+                        if (!userStats[u]) userStats[u] = { single: 0, tie: 0 };
+                        userStats[u].tie += 1;
+                    });
+                } else {
+                    const u = row.user;
+                    chartData[u] = (chartData[u] || 0) + 1;
+                    if (!userStats[u]) userStats[u] = { single: 0, tie: 0 };
+                    userStats[u].single += 1;
+                }
+            });
+
+            // 좌측 유저 리스트 DOM 그리기 (Tailwind 클래스 적용)
+            const summaryList = document.getElementById("userSummaryList");
+            const sortedUsers = Object.keys(userStats).sort((a, b) => {
+                return (userStats[b].single + userStats[b].tie) - (userStats[a].single + userStats[a].tie);
+            });
+
+            if (sortedUsers.length === 0) {
+                summaryList.innerHTML = "<li class='text-slate-400 text-sm p-3'>해당 레벨에 타이틀을 가진 유저가 없습니다.</li>";
+            } else {
+                summaryList.innerHTML = sortedUsers.map(user => {
+                    const s = userStats[user];
+                    const total = s.single + s.tie;
+                    const initial = user.substring(0,2).toUpperCase();
+                    // 동적 클릭 이벤트와 호버 효과 추가
+                    return `
+                    <li class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition border border-transparent hover:border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                ${initial}
+                            </div>
+                            <span class="font-medium text-slate-700 cursor-pointer hover:text-brand-500" onclick="setListFilter('user:${user}')">${user}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-sm font-bold text-brand-500 cursor-pointer" onclick="setListFilter('user:${user}')">${total}개</span>
+                            <span class="text-xs text-slate-400 space-x-1">
+                                <span class="cursor-pointer hover:text-slate-600" onclick="setListFilter('single:${user}')">단독 ${s.single}</span> <span class="text-slate-300">|</span> 
+                                <span class="cursor-pointer hover:text-slate-600" onclick="setListFilter('tie:${user}')">공동 ${s.tie}</span>
+                            </span>
+                        </div>
+                    </li>`;
+                }).join('');
+            }
+
+            drawChart(chartData);
+        }
+
+        // 색상 해시 함수 유지
+        function stringToColor(str, isDimmed) {
+            const alpha = isDimmed ? 0.15 : 1.0;
+            if (str === 'null') return `rgba(224, 224, 224, ${alpha})`;
+            if (str === 'tie') return `rgba(255, 152, 0, ${alpha})`;
+
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            const hue = Math.abs(hash % 360);
+            return `hsla(${hue}, 70%, 60%, ${alpha})`;
+        }
+
+        // 차트 그리기
+        function drawChart(dataObj) {
+            const ctx = document.getElementById('rankingChart').getContext('2d');
+            const labels = Object.keys(dataObj).filter(k => k !== 'tie' && k !== 'null').sort((a, b) => dataObj[b] - dataObj[a]);
+            if (dataObj['tie'] > 0) labels.push('tie');
+            if (dataObj['null'] > 0) labels.push('null');
+
+            const dataValues = labels.map(l => dataObj[l]);
+
+            const backgroundColors = labels.map(label => {
+                let filterCodeForLabel = label;
+                if (label !== 'tie' && label !== 'null') filterCodeForLabel = 'single:' + label;
+
+                let isDimmed = true;
+                if (currentChartFilter === 'all') isDimmed = false;
+                else if (currentChartFilter === filterCodeForLabel) isDimmed = false;
+                else if (currentChartFilter.startsWith('user:') && label === currentChartFilter.split(':')[1]) isDimmed = false;
+                else if (currentChartFilter.startsWith('tie:') && label === 'tie') isDimmed = false;
+
+                return stringToColor(label, isDimmed);
+            });
+
+            if (myChart) {
+                myChart.data.labels = labels;
+                myChart.data.datasets[0].data = dataValues;
+                myChart.data.datasets[0].backgroundColor = backgroundColors;
+                myChart.update();
+            } else {
+                myChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: dataValues, backgroundColor: backgroundColors, borderWidth: 2, borderColor: '#ffffff' }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Pretendard' } } },
+                            tooltip: { callbacks: { label: function(c) { return ` ${c.label}: ${c.raw}곡`; } } }
+                        },
+                        onClick: (event, elements, chart) => {
+                            if (elements.length > 0) {
+                                const dataIndex = elements[0].index;
+                                const label = chart.data.labels[dataIndex];
+                                let filterCode = label;
+                                if (label !== 'tie' && label !== 'null') filterCode = 'single:' + label;
+                                setListFilter(filterCode);
+                            }
+                        },
+                        onHover: (event, chartElement) => {
+                            event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        }
+
+        // --- 모달 로직 (기존 유지, CSS 클래스만 Tailwind용으로 변경) ---
+        async function openModal(song, level) {
+            const modal = document.getElementById("rankingModal");
+            const title = document.getElementById("modalTitle");
+            const tbody = document.getElementById("modalTableBody");
+
+            title.innerText = `${song} (Lv.${level})`;
+            tbody.innerHTML = "<tr><td colspan='3' class='py-8 text-center text-slate-500'>데이터를 불러오는 중... ⏳</td></tr>";
+            
+            // Tailwind flex 표시
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+            try {
+                const response = await fetch(`/api/ranking?song=${encodeURIComponent(song)}&level=${encodeURIComponent(level)}`);
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='3' class='py-8 text-center text-slate-400'>플레이 기록이 없습니다.</td></tr>";
+                } else {
+                    let html = "";
+                    let displayRank = 1;
+                    let previousScore = -1;
+
+                    data.forEach((item, index) => {
+                        if (item.score !== previousScore) { displayRank = index + 1; }
+                        previousScore = item.score;
+
+                        const isFirst = displayRank === 1;
+                        const rankHtml = isFirst 
+                            ? `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded">🥇 1</span>` 
+                            : `<span class="text-slate-500 font-medium pl-2">${displayRank}</span>`;
+
+                        html += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 border-b border-slate-50">${rankHtml}</td>
+                                <td class="px-6 py-4 border-b border-slate-50"><strong class="text-slate-800">${item.username}</strong></td>
+                                <td class="px-6 py-4 border-b border-slate-50 text-right font-mono text-brand-600">${parseFloat(item.score).toFixed(4)}%</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) {
+                tbody.innerHTML = "<tr><td colspan='3' class='py-8 text-center text-red-500'>서버에서 데이터를 불러오는데 실패했습니다.</td></tr>";
+            }
+        }
+
+        function closeModal(event) {
+            const modal = document.getElementById("rankingModal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
     </script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
