@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 패널 - 데이터베이스 관리</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Grid.js -->
+    <link href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f1f5f9; }
+        .gridjs-container { font-family: 'Pretendard', sans-serif; font-size: 0.875rem; }
+        .gridjs-td { white-space: normal !important; word-break: break-word !important; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center py-10 px-4 sm:px-6">
+
+    <!-- Header -->
+    <div class="w-full max-w-6xl mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <span class="text-red-500">⚙️</span> 시스템 관리자 패널
+            </h1>
+            <p class="text-slate-500 mt-1 text-sm">DB 레코드 삭제 및 관리</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin_logout') }}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition">로그아웃</a>
+            <a href="{{ url_for('show_dashboard') }}" target="_blank" class="ml-2 bg-brand-50 hover:bg-brand-100 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition border border-blue-200">일반 대시보드 보기</a>
+        </div>
+    </div>
+
+    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- 닉네임 단위 삭제 위젯 -->
+        <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
+            <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">사용자 데이터 일괄 삭제</h2>
+            <p class="text-xs text-slate-500 mb-4">선택한 유저의 모든 플레이 기록이 데이터베이스에서 영구적으로 삭제됩니다.</p>
+            
+            <label class="block text-sm font-medium text-slate-700 mb-2">대상 닉네임 선택</label>
+            <select id="userSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block p-2.5 mb-4 outline-none">
+                <option value="">-- 유저 선택 --</option>
+                {% for user in users %}
+                    <option value="{{ user }}">{{ user }}</option>
+                {% endfor %}
+            </select>
+            
+            <button onclick="deleteUser()" class="w-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white font-bold py-2.5 px-4 rounded-lg transition duration-200">
+                해당 유저 기록 전체 삭제
+            </button>
+        </div>
+
+        <!-- 개별 기록 삭제 테이블 -->
+        <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">개별 곡 기록 관리</h2>
+            <p class="text-sm text-slate-500 mb-4">특정 유저가 플레이한 단일 곡의 기록만 지우려면 아래 표에서 '삭제' 버튼을 누르세요.</p>
+            
+            <div id="recordsTableWrapper"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const allRecords = {{ records_json|safe }};
+        let gridInstance;
+
+        window.onload = function() {
+            renderTable(allRecords);
+        }
+
+        // --- Grid.js 테이블 렌더링 ---
+        function renderTable(data) {
+            const gridData = data.map(r => [
+                r.id,
+                r.username,
+                r.song,
+                r.level,
+                r.score,
+                r.date,
+                r.id // Action column에 쓰일 ID
+            ]);
+
+            gridInstance = new gridjs.Grid({
+                columns: [
+                    { name: "ID", width: '8%', hidden: true },
+                    { name: "유저명", width: '15%' },
+                    { name: "곡 이름", width: '35%' },
+                    { name: "레벨", width: '10%' },
+                    { 
+                        name: "달성도", 
+                        width: '12%',
+                        formatter: (cell) => `${parseFloat(cell).toFixed(4)}%`
+                    },
+                    { 
+                        name: "관리", 
+                        width: '15%',
+                        sort: false,
+                        formatter: (cell) => gridjs.html(`
+                            <button onclick="deleteRecord(${cell})" class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded transition shadow-sm">
+                                삭제
+                            </button>
+                        `)
+                    }
+                ],
+                data: gridData,
+                search: { enabled: true, placeholder: "유저명, 곡 이름 검색..." },
+                sort: true,
+                pagination: { enabled: true, limit: 15 },
+                language: {
+                    search: { placeholder: '검색...' },
+                    pagination: { previous: '이전', next: '다음', showing: '표시중', results: () => '결과' }
+                }
+            }).render(document.getElementById("recordsTableWrapper"));
+        }
+
+        // --- 유저 일괄 삭제 기능 ---
+        async function deleteUser() {
+            const select = document.getElementById("userSelect");
+            const username = select.value;
+
+            if (!username) {
+                alert("삭제할 유저를 선택해주세요.");
+                return;
+            }
+
+            if (!confirm(`정말로 [${username}]님의 모든 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/api/delete_user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload(); // 성공 시 페이지 새로고침
+                } else {
+                    alert("오류: " + result.error);
+                }
+            } catch (error) {
+                alert("서버 통신 중 오류가 발생했습니다.");
+            }
+        }
+
+        // --- 단일 기록 삭제 기능 ---
+        async function deleteRecord(recordId) {
+            if (!confirm("해당 곡의 플레이 기록을 삭제하시겠습니까?")) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/api/delete_record', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: recordId })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload(); // 성공 시 페이지 새로고침
+                } else {
+                    alert("오류: " + result.error);
+                }
+            } catch (error) {
+                alert("서버 통신 중 오류가 발생했습니다.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -16,6 +16,8 @@ CORS(app)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
 SECRET_PASSWORD = os.getenv('ADMIN_PASSWORD', 'ZUNDA')
 
+SUPER_ADMIN_PASSWORD = os.getenv('SUPER_ADMIN_PASSWORD', 'asdf')
+
 # 클라우드 서버용 절대 경로 설정 (이 서버가 위치한 곳의 maimai.db를 정확히 짚어줌)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'maimai.db')
@@ -46,6 +48,9 @@ def init_db():
 
 init_db()
 
+# ==========================================
+# 기존 유저용 라우트
+# ==========================================
 @app.route('/', methods=['GET', 'POST'])
 def login():
     error = None
@@ -167,6 +172,102 @@ def save_scores():
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "message": f"{username}님의 전체 곡 동기화 완료!"})
+
+# ==========================================
+# 어드민 전용 라우트
+# ==========================================
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    error = None
+    if request.method == 'POST':
+        if request.form.get('password') == SUPER_ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_dashboard'))
+        else:
+            error = "관리자 비밀번호가 틀렸습니다."
+    return render_template('admin_login.html', error=error)
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin')
+def admin_dashboard():
+    # 세션 확인 (보안)
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # 1. 닉네임 단위 삭제를 위한 유저 목록
+    c.execute('SELECT DISTINCT username FROM scores ORDER BY username')
+    users = [row[0] for row in c.fetchall()]
+
+    # 2. 개별 곡 삭제를 위한 전체 기록 목록
+    c.execute('''
+        SELECT id, username, song_name, difficulty_level, score, updated_at 
+        FROM scores 
+        ORDER BY updated_at DESC
+    ''')
+    all_records = c.fetchall()
+    conn.close()
+
+    # 데이터를 프론트엔드로 전달하기 위해 JSON 포맷팅
+    records_json = json.dumps([
+        {
+            'id': r[0], 
+            'username': r[1], 
+            'song': r[2], 
+            'level': r[3], 
+            'score': r[4], 
+            'date': r[5]
+        } for r in all_records
+    ])
+
+    return render_template('admin_dashboard.html', users=users, records_json=records_json)
+
+@app.route('/admin/api/delete_user', methods=['POST'])
+def api_delete_user():
+    if not session.get('admin_logged_in'):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    data = request.json
+    username = data.get('username')
+    
+    if not username:
+        return jsonify({"success": False, "error": "Username is required"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('DELETE FROM scores WHERE username = ?', (username,))
+    deleted_count = c.rowcount
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "message": f"[{username}]님의 모든 기록({deleted_count}개)이 삭제되었습니다."})
+
+@app.route('/admin/api/delete_record', methods=['POST'])
+def api_delete_record():
+    if not session.get('admin_logged_in'):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    data = request.json
+    record_id = data.get('id')
+    
+    if not record_id:
+        return jsonify({"success": False, "error": "Record ID is required"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('DELETE FROM scores WHERE id = ?', (record_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "message": "해당 기록이 성공적으로 삭제되었습니다."})
+
 
 if __name__ == '__main__':
     app.run()
