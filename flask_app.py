@@ -48,25 +48,16 @@ def init_db():
 
 init_db()
 
-# ==========================================
-# 기존 유저용 라우트
-# ==========================================
 @app.route('/', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
         if request.form.get('password') == SECRET_PASSWORD:
             session['logged_in'] = True
-            return redirect(url_for('welcome'))
+            return redirect(url_for('show_dashboard'))
         else:
             error = "비밀번호가 틀렸습니다. 다시 시도해주세요."
     return render_template('login.html', error=error)
-
-@app.route('/welcome')
-def welcome():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('welcome.html')
 
 @app.route('/dashboard')
 def show_dashboard():
@@ -267,7 +258,6 @@ def api_delete_record():
     conn.close()
 
     return jsonify({"success": True, "message": "해당 기록이 성공적으로 삭제되었습니다."})
-
 
 if __name__ == '__main__':
     app.run()

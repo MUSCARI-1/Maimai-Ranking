@@ -33,34 +33,27 @@
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-        /* Grid.js Customization */
         .gridjs-container { font-family: 'Pretendard', sans-serif; color: #334155; }
         .gridjs-wrapper { 
             border-radius: 0.75rem; 
             border: none !important; 
             box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); 
-            /* 가로 스크롤을 막고 자연스럽게 줄어들게 함 */
             overflow-x: hidden !important; 
         }
-        .gridjs-table {
-            width: 100% !important;
-            /* 기존의 min-width: 550px 방어막 삭제 */
-        }
+        .gridjs-table { width: 100% !important; }
         .gridjs-th { background-color: #f1f5f9 !important; font-weight: 600 !important; border-bottom: 2px solid #e2e8f0 !important; }
         .gridjs-td { 
             border: 1px solid #f1f5f9 !important; 
             cursor: pointer; 
-            /* 좁은 화면에서 텍스트가 셀을 뚫고 나가지 않고 자연스럽게 줄바꿈 되도록 허용 */
             white-space: normal !important; 
             word-break: break-word !important; 
         }
         .gridjs-tr:hover .gridjs-td { background-color: #f8fafc !important; }
 
-        /* 모바일 전용 여백/폰트 최적화 */
         @media (max-width: 640px) {
             .gridjs-th, .gridjs-td {
-                padding: 8px 6px !important; /* 좁은 화면에서 여백 대폭 축소 */
-                font-size: 0.75rem !important; /* 모바일에서 폰트 축소 */
+                padding: 8px 6px !important; 
+                font-size: 0.75rem !important; 
             }
         }
     </style>
@@ -76,25 +69,24 @@
             <p class="text-slate-500 mt-2 text-sm">내수용 프라이빗 랭킹 및 점유율 분석</p>
         </div>
         <div class="flex gap-2">
-            <button class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm">내 기록 갱신</button>
+            <!-- 갱신 버튼 누르면 북마크릿 모달 실행 -->
+            <button onclick="openBookmarkletModal()" class="bg-blue-600 border border-transparent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm flex items-center gap-2">
+                <span>🔄</span> 내 기록 갱신
+            </button>
         </div>
     </div>
 
     <!-- Top Widgets -->
     <div class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <!-- User Summary List -->
         <div class="glass-card rounded-2xl p-6 lg:col-span-1 flex flex-col max-h-[400px]">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
                     <span class="text-xl">🔥</span> 타이틀 점유율
                 </h2>
             </div>
-            <ul class="space-y-3 overflow-y-auto pr-2" id="userSummaryList">
-                <!-- Dynamically rendered by JS -->
-            </ul>
+            <ul class="space-y-3 overflow-y-auto pr-2" id="userSummaryList"></ul>
         </div>
 
-        <!-- Chart Area -->
         <div class="glass-card rounded-2xl p-6 lg:col-span-2 flex flex-col items-center justify-center relative min-h-[400px]">
             <h2 class="absolute top-6 left-6 text-lg font-semibold text-slate-800">점유율 현황</h2>
             <p class="absolute top-7 right-6 text-xs text-slate-400 hidden sm:block">조각을 클릭하면 해당 곡 필터링</p>
@@ -121,22 +113,19 @@
                 <label for="levelFilter" class="text-sm font-medium text-slate-600 hidden sm:block">레벨 필터:</label>
                 <select id="levelFilter" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none shadow-sm transition">
                     <option value="all">전체 레벨 보기</option>
-                    <!-- Dynamically populated -->
                 </select>
             </div>
         </div>
         <div id="gridjs-table-wrapper"></div>
     </div>
 
-    <!-- Modal Area (Tailwind Styled) -->
+    <!-- Ranking Modal -->
     <div id="rankingModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 items-center justify-center p-4 transition-opacity" onclick="closeModal(event)">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden" onclick="event.stopPropagation()">
-            <!-- Modal Header -->
             <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 id="modalTitle" class="font-bold text-xl text-slate-800">곡 이름 (Lv.?) 랭킹</h3>
                 <button class="text-slate-400 hover:text-red-500 text-3xl font-light leading-none transition" onclick="closeModal(event)">&times;</button>
             </div>
-            <!-- Modal Body -->
             <div class="p-0 overflow-y-auto max-h-[60vh]">
                 <table class="w-full text-sm text-left text-slate-600">
                     <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 shadow-sm">
@@ -147,28 +136,64 @@
                         </tr>
                     </thead>
                     <tbody id="modalTableBody" class="divide-y divide-slate-100">
-                        <!-- Data fetched via API -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <!-- Bookmarklet / Update Guide Modal -->
+    <div id="bookmarkletModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] items-center justify-center p-4 transition-opacity" onclick="closeBookmarkletModal(event)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+            <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-blue-50">
+                <h3 class="font-bold text-xl text-blue-900 flex items-center gap-2"><span>🔄</span> 기록 갱신 가이드</h3>
+                <button class="text-blue-400 hover:text-red-500 text-3xl font-light leading-none transition" onclick="closeBookmarkletModal(event)">&times;</button>
+            </div>
+            <div class="p-6 text-slate-700">
+                <p class="mb-4">랭킹 보드에 자신의 점수를 업데이트하려면 북마크바(즐겨찾기)를 활용해야 합니다.</p>
+                
+                <ol class="space-y-4 list-decimal list-inside font-medium">
+                    <li class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        아래 버튼을 눌러 실행 코드를 복사하세요.
+                        <div class="mt-2 text-center">
+                            <button id="copyBtn" onclick="copyBookmarklet()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm transition w-full">
+                                📋 북마크릿 코드 복사하기
+                            </button>
+                        </div>
+                    </li>
+                    <li class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        브라우저 북마크(즐겨찾기)를 하나 추가하고, <strong>URL(주소) 란에 방금 복사한 코드를 붙여넣기</strong> 합니다. (이름은 '마이마이 갱신' 등 자유롭게 설정)
+                    </li>
+                    <li class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        마이마이 공식 넷 홈페이지에 접속합니다.
+                        <div class="mt-2 text-center">
+                            <a href="https://maimaidx-eng.com/maimai-mobile/home/" target="_blank" class="inline-block bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-lg text-sm transition w-full border border-blue-200">
+                                🔗 공식 홈페이지(마이마이 넷) 열기
+                            </a>
+                        </div>
+                    </li>
+                    <li class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        마이마이 넷에 로그인 된 상태에서, <strong>아까 저장해둔 북마크를 클릭(실행)</strong> 하시면 갱신이 시작됩니다!
+                    </li>
+                </ol>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 text-right">
+                <button class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-5 py-2 rounded-lg font-medium transition" onclick="closeBookmarkletModal(event)">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 1. Flask에서 주입되는 데이터
         const allScores = {{ top_scores_json|safe }};
         
-        // --- 상태 변수 ---
         let currentLevelFilter = "all";
         let currentChartFilter = "all";
         let myChart = null;
         let gridInstance = null;
 
-        // --- 초기화 로직 ---
         window.onload = function() {
-            // 방어적 코드: allScores가 존재할 때만 레벨 필터 생성
             if (allScores && Array.isArray(allScores) && allScores.length > 0) {
-                const levels = new Set(allScores.map(item => String(item.level || ""))); // 명시적 String 캐스팅
+                const levels = new Set(allScores.map(item => String(item.level || "")));
                 const select = document.getElementById("levelFilter");
                 
                 const sortedLevels = Array.from(levels).sort((a, b) => {
@@ -185,7 +210,6 @@
                 });
             }
 
-            // 이벤트 리스너 바인딩
             document.getElementById("levelFilter").addEventListener("change", function(e) {
                 currentLevelFilter = e.target.value;
                 currentChartFilter = "all"; 
@@ -195,12 +219,9 @@
             renderDashboard();
         };
 
-        // --- 핵심 렌더링 함수 ---
         function renderDashboard() {
-            // 방어적 코드: 데이터가 아예 없더라도 빈 배열로 치환하여 Grid.js가 '데이터 없음' UI를 그리도록 유도
             const safeScores = (allScores && Array.isArray(allScores)) ? allScores : [];
 
-            // 1차 필터: 레벨
             let levelFilteredScores = safeScores;
             if (currentLevelFilter !== "all") {
                 levelFilteredScores = safeScores.filter(item => String(item.level) === String(currentLevelFilter));
@@ -208,7 +229,6 @@
 
             updateSummaryAndChart(levelFilteredScores);
 
-            // 2차 필터: 차트/유저 상호작용
             let tableScores = levelFilteredScores;
             if (currentChartFilter !== "all") {
                 if (currentChartFilter === 'null') {
@@ -243,56 +263,43 @@
                 filterStatus.innerHTML = `✖ [${text}] 필터 해제`;
             }
 
-            // [에러 방지 핵심 구간] Grid.js 형식에 맞게 데이터 변환 시 엄격한 타입 교정
             const gridData = tableScores.map(row => {
                 let parsedScore = parseFloat(row.score);
-                if (isNaN(parsedScore)) parsedScore = 0; // NaN이 Grid.js 정렬을 붕괴시키는 것 방지
+                if (isNaN(parsedScore)) parsedScore = 0;
 
                 return [
                     row.song || "Unknown Song", 
-                    String(row.level || ""), // 숫자 14가 들어와도 무조건 문자열 "14"로 캐스팅
+                    String(row.level || ""),
                     row.user || "없음", 
                     parsedScore 
                 ];
             });
 
-            // Grid.js 렌더링 에러 바운더리
             try {
                 if (!gridInstance) {
                     gridInstance = new gridjs.Grid({
                         columns: [
-                            { 
-                                name: "곡 이름", 
-                                /* 너비 비율을 다시 주고 줄바꿈 방지 클래스를 제거 */
-                                width: '45%' 
-                            },
+                            { name: "곡 이름", width: '45%' },
                             { 
                                 name: "레벨", 
                                 width: '10%',
                                 sort: {
                                     compare: (a, b) => {
-                                        // 인간의 도메인 지식(+, - 티어)을 컴퓨터의 정량적 수치(.5)로 매핑하는 커스텀 로직
                                         const getLevelValue = (lvl) => {
                                             if (!lvl) return 0;
                                             let val = parseFloat(lvl);
-                                            if (isNaN(val)) return 0; // "9", "10" 문자열 꼬임 방지
-                                            if (String(lvl).includes('+')) val += 0.5; // +는 0.5 가중치 부여
+                                            if (isNaN(val)) return 0;
+                                            if (String(lvl).includes('+')) val += 0.5;
                                             return val;
                                         };
                                         const valA = getLevelValue(a);
                                         const valB = getLevelValue(b);
-                                        
-                                        // Grid.js 정렬 엔진에 결과값 반환
                                         if (valA > valB) return 1;
                                         if (valA < valB) return -1;
                                         return 0;
                                     }
                                 },
-                                attributes: (cell) => { 
-                                    let baseClass = '';
-                                    // if(cell && String(cell).includes('+')) return { 'class': baseClass + 'text-red-500 font-bold' };
-                                    return { 'class': baseClass + 'font-medium' }; 
-                                }
+                                attributes: (cell) => { return { 'class': 'font-medium' }; }
                             },
                             { 
                                 name: "1등 유저", 
@@ -303,7 +310,6 @@
                                 name: "최고 점수", 
                                 width: '20%',
                                 formatter: (cell) => {
-                                    // cell이 숫자가 아닐 경우의 포맷터 크래시 방지
                                     const numCell = Number(cell);
                                     return (isNaN(numCell) || numCell === 0) ? '-' : `${numCell.toFixed(4)}%`;
                                 }
@@ -336,15 +342,9 @@
                 }
             } catch (error) {
                 console.error("Grid.js 렌더링 치명적 오류:", error);
-                document.getElementById("gridjs-table-wrapper").innerHTML = `
-                    <div class="p-6 text-center bg-red-50 rounded-lg border border-red-200">
-                        <p class="text-red-600 font-bold">테이블을 그리는 중 오류가 발생했습니다.</p>
-                        <p class="text-red-400 text-sm mt-1">데이터 타입 불일치일 수 있습니다. (F12 콘솔 확인 필요)</p>
-                    </div>`;
             }
         }
 
-        // --- 리스트 필터링 연동 ---
         function setListFilter(filterType) {
             if (currentChartFilter === filterType) currentChartFilter = 'all';
             else currentChartFilter = filterType;
@@ -356,7 +356,6 @@
             renderDashboard();
         }
 
-        // --- 요약 및 차트 렌더링 ---
         function updateSummaryAndChart(filteredScores) {
             const userStats = {};
             const chartData = { 'null': 0, 'tie': 0 };
@@ -379,7 +378,6 @@
                 }
             });
 
-            // 좌측 유저 리스트 DOM 그리기 (Tailwind 클래스 적용)
             const summaryList = document.getElementById("userSummaryList");
             const sortedUsers = Object.keys(userStats).sort((a, b) => {
                 return (userStats[b].single + userStats[b].tie) - (userStats[a].single + userStats[a].tie);
@@ -392,7 +390,6 @@
                     const s = userStats[user];
                     const total = s.single + s.tie;
                     const initial = user.substring(0,2).toUpperCase();
-                    // 동적 클릭 이벤트와 호버 효과 추가
                     return `
                     <li class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition border border-transparent hover:border-slate-200">
                         <div class="flex items-center gap-3">
@@ -415,29 +412,17 @@
             drawChart(chartData);
         }
 
-        // 🎨 유저별 퍼스널 컬러 함수
         function stringToColor(str, isDimmed) {
-            // 클릭해서 선택되지 않은 나머지 조각들은 투명도를 15%로 낮춤
             const alpha = isDimmed ? 0.15 : 1.0;
-            
-            // 1. 특수 항목 (주인 없음, 공동 1등)
             if (str === 'null') return `rgba(224, 224, 224, ${alpha})`;
             if (str === 'tie') return `rgba(255, 152, 0, ${alpha})`;
 
-            // 2. 유저별 고정 색상 사전
-            // (주의: 띄어쓰기, 전각/반각이 DB 데이터와 완벽하게 일치해야 작동합니다.
             const userColors = {
-                'Ａ＊ＲＩＡ♪': '#47BBFF',
-                'ＹＵＩ': '#f774d2',
-                'Ｋｅｓｓｏｋｕ': '#FAAABC',
-                'ＰＬＵＭＰ♪': '#36318C',
-                'ＭＵＳＣＡＲＩ': '#7733DD',
-                'ＴＥＲＵ♪': '#1f1e33',
+                'Ａ＊ＲＩＡ♪': '#47BBFF', 'ＹＵＩ': '#f774d2', 'Ｋｅｓｓｏｋｕ': '#FAAABC',
+                'ＰＬＵＭＰ♪': '#36318C', 'ＭＵＳＣＡＲＩ': '#7733DD', 'ＴＥＲＵ♪': '#1f1e33',
             };
 
             const hexColor = userColors[str];
-
-            // 3. 사전에 지정한 유저라면 HEX 코드를 RGBA(투명도 지원)로 변환하여 반환
             if (hexColor) {
                 const r = parseInt(hexColor.slice(1, 3), 16);
                 const g = parseInt(hexColor.slice(3, 5), 16);
@@ -445,14 +430,12 @@
                 return `rgba(${r}, ${g}, ${b}, ${alpha})`;
             }
 
-            // 4. 리스트에 없는 '새로운 유저'가 나타나면 기존처럼 닉네임 글자 기반 랜덤 색상 부여
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
             const hue = Math.abs(hash % 360);
             return `hsla(${hue}, 70%, 60%, ${alpha})`;
         }
 
-        // 차트 그리기
         function drawChart(dataObj) {
             const ctx = document.getElementById('rankingChart').getContext('2d');
             const labels = Object.keys(dataObj).filter(k => k !== 'tie' && k !== 'null').sort((a, b) => dataObj[b] - dataObj[a]);
@@ -510,7 +493,6 @@
             }
         }
 
-        // --- 모달 로직 (기존 유지, CSS 클래스만 Tailwind용으로 변경) ---
         async function openModal(song, level) {
             const modal = document.getElementById("rankingModal");
             const title = document.getElementById("modalTitle");
@@ -519,7 +501,6 @@
             title.innerText = `${song} (Lv.${level})`;
             tbody.innerHTML = "<tr><td colspan='3' class='py-8 text-center text-slate-500'>데이터를 불러오는 중... ⏳</td></tr>";
             
-            // Tailwind flex 표시
             modal.classList.remove("hidden");
             modal.classList.add("flex");
 
@@ -562,6 +543,42 @@
             const modal = document.getElementById("rankingModal");
             modal.classList.add("hidden");
             modal.classList.remove("flex");
+        }
+
+        function openBookmarkletModal() {
+            const modal = document.getElementById("bookmarkletModal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeBookmarkletModal(event) {
+            const modal = document.getElementById("bookmarkletModal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+        function copyBookmarklet() {
+            const payload = `javascript:(function(i){var t=i.createElement("script");t.src="https://muscari.pythonanywhere.com/static/bookmarklet.js?v="+Math.floor(Date.now()/1e5);i.body.append(t)})(document);`;
+            
+            const tempInput = document.createElement("input");
+            tempInput.value = payload;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            
+            // 버튼 상태 변경 안내
+            const btn = document.getElementById("copyBtn");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "✅ 복사 완료! (주소창/북마크에 붙여넣으세요)";
+            btn.classList.add("bg-green-600", "hover:bg-green-700");
+            btn.classList.remove("bg-slate-800", "hover:bg-slate-900");
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove("bg-green-600", "hover:bg-green-700");
+                btn.classList.add("bg-slate-800", "hover:bg-slate-900");
+            }, 3000);
         }
     </script>
 </body>
